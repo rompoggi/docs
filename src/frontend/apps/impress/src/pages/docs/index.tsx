@@ -5,12 +5,18 @@ import { DocsGrid } from '@/docs/docs-grid';
 import { DocDefaultFilter } from '@/features/docs';
 import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
+import { ChatPrompt } from '@/components/ChatPrompt';
 
 const Page: NextPageWithLayout = () => {
   const searchParams = useSearchParams();
   const target = searchParams.get('target');
 
-  return <DocsGrid target={target as DocDefaultFilter} />;
+  return (
+    <>
+      <DocsGrid target={target as DocDefaultFilter} />
+      <ChatPrompt />
+    </>
+  );
 };
 
 Page.getLayout = function getLayout(page: ReactElement) {

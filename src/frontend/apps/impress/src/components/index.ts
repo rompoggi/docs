@@ -11,3 +11,4 @@ export * from './SideModal';
 export * from './separators';
 export * from './Text';
 export * from './TextErrors';
+export * from './ChatPrompt';

@@ -8,6 +8,7 @@ import { HEADER_HEIGHT } from '@/features/header/conf';
 import { LeftPanel } from '@/features/left-panel';
 import { MAIN_LAYOUT_ID } from '@/layouts/conf';
 import { useResponsiveStore } from '@/stores';
+import { ChatPrompt }from '@/components';
 
 type MainLayoutProps = {
   backgroundColor?: 'white' | 'grey';
@@ -53,6 +54,7 @@ export function MainLayout({
           {children}
         </Box>
       </Box>
+      <ChatPrompt />
     </Box>
   );
 }
