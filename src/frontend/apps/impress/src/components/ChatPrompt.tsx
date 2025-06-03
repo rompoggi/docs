@@ -273,6 +273,38 @@ export const ChatPrompt: React.FC = () => {
     };
   }, []);
 
+  // Keyboard shortcut: Ctrl+i to toggle chat, Ctrl+m to toggle moodle, Esc to close
+  useEffect(() => {
+    const handleKeyDown = (event: Event) => {
+      const e = event as unknown as KeyboardEvent;
+      // Ctrl+i or Cmd+i toggles chat
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+        e.preventDefault();
+        setIsOpen((prev) => {
+          if (!prev) setIsMoodleOpen(false);
+          return !prev;
+        });
+      }
+      // Ctrl+m or Cmd+m toggles moodle
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'm' || e.key === 'M')) {
+        e.preventDefault();
+        setIsMoodleOpen((prev) => {
+          if (!prev) setIsOpen(false);
+          return !prev;
+        });
+      }
+      // Esc closes chat and moodle
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setIsMoodleOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown as EventListener);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown as EventListener);
+    };
+  }, []);
+
   // Accept an optional override value for sending (for programmatic send)
   const handleSend = (overrideValue?: string) => {
     const valueToSend = overrideValue !== undefined ? overrideValue : inputValue;
