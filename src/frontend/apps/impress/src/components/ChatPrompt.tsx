@@ -1,5 +1,6 @@
-import React, { useState, ChangeEvent, KeyboardEvent } from 'react';
+import React, { ChangeEvent, KeyboardEvent, useState } from 'react';
 import styled from 'styled-components';
+
 import { Box } from './Box';
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -73,14 +74,15 @@ const ChatMessages = styled(Box)`
 `;
 
 const MessageBubble = styled(Box)<{ sender: 'user' | 'assistant' }>`
-  align-self: ${({ sender }) => (sender === 'user' ? 'flex-end' : 'flex-start')};
+  align-self: ${({ sender }) =>
+    sender === 'user' ? 'flex-end' : 'flex-start'};
   background: ${({ sender }) => (sender === 'user' ? '#111' : '#fff')};
   color: ${({ sender }) => (sender === 'user' ? 'white' : 'black')};
   border-radius: 28px;
   padding: 0.5rem 1rem;
   margin: 0.25rem;
   max-width: 80%;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.18);
 `;
 
 const ChatInput = styled(Box)`
@@ -128,14 +130,21 @@ interface Message {
   sender: 'user' | 'assistant';
 }
 
+interface AlbertResponse {
+  response?: string;
+  error?: string;
+}
+
 export const ChatPrompt: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const handleSend = () => {
+    if (!inputValue.trim() || isLoading) {
+      return;
+    }
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -147,14 +156,15 @@ export const ChatPrompt: React.FC = () => {
     setInputValue('');
     setIsLoading(true);
 
-    const responseText = await queryAlbert(inputValue);
-    const response: Message = {
-      id: (Date.now() + 1).toString(),
-      text: responseText,
-      sender: 'assistant',
-    };
-    setMessages((prev: Message[]) => [...prev, response]);
-    setIsLoading(false);
+    void queryAlbert(inputValue).then((responseText) => {
+      const response: Message = {
+        id: (Date.now() + 1).toString(),
+        text: responseText,
+        sender: 'assistant',
+      };
+      setMessages((prev: Message[]) => [...prev, response]);
+      setIsLoading(false);
+    });
   };
 
   return (
@@ -184,12 +194,18 @@ export const ChatPrompt: React.FC = () => {
           <ChatInput>
             <Input
               value={inputValue}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setInputValue(e.target.value)
+              }
               placeholder="Type your message..."
-              onKeyPress={(e: KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSend()}
+              onKeyPress={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === 'Enter') {
+                  handleSend();
+                }
+              }}
               disabled={isLoading}
             />
-            <SendButton onClick={handleSend} disabled={isLoading}>
+            <SendButton onClick={() => handleSend()} disabled={isLoading}>
               <Icon iconName="send" color="white" />
             </SendButton>
           </ChatInput>
@@ -197,7 +213,7 @@ export const ChatPrompt: React.FC = () => {
       )}
     </ChatPromptContainer>
   );
-}
+};
 
 export async function queryAlbert(prompt: string): Promise<string> {
   try {
@@ -211,14 +227,16 @@ export async function queryAlbert(prompt: string): Promise<string> {
       }),
     });
 
-    let data;
+    let data: AlbertResponse;
     try {
-      data = await response.json();
-    } catch (error) {
-      console.log(error);
+      data = (await response.json()) as AlbertResponse;
+    } catch (parseError) {
+      console.error('Failed to parse response:', parseError);
+      return 'Error parsing response from Albert.';
     }
-    return data || 'No response from Albert.';
+    return data.response || 'No response from Albert.';
   } catch (error) {
+    console.error('Network error:', error);
     return 'Network error: Unable to reach Albert API.';
   }
 }

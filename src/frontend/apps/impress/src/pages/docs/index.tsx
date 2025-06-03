@@ -1,11 +1,11 @@
 import { useSearchParams } from 'next/navigation';
 import type { ReactElement } from 'react';
 
+import { ChatPrompt } from '@/components/ChatPrompt';
 import { DocsGrid } from '@/docs/docs-grid';
 import { DocDefaultFilter } from '@/features/docs';
 import { MainLayout } from '@/layouts';
 import { NextPageWithLayout } from '@/types/next';
-import { ChatPrompt } from '@/components/ChatPrompt';
 
 const Page: NextPageWithLayout = () => {
   const searchParams = useSearchParams();

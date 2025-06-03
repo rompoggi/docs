@@ -1,14 +1,13 @@
 import { PropsWithChildren } from 'react';
 import { css } from 'styled-components';
 
-import { Box } from '@/components';
+import { Box, ChatPrompt } from '@/components';
 import { useCunninghamTheme } from '@/cunningham';
 import { Header } from '@/features/header';
 import { HEADER_HEIGHT } from '@/features/header/conf';
 import { LeftPanel } from '@/features/left-panel';
 import { MAIN_LAYOUT_ID } from '@/layouts/conf';
 import { useResponsiveStore } from '@/stores';
-import { ChatPrompt }from '@/components';
 
 type MainLayoutProps = {
   backgroundColor?: 'white' | 'grey';
