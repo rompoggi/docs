@@ -1,9 +1,12 @@
 import React, { ChangeEvent, KeyboardEvent, useEffect, useState } from 'react';
+import removeMarkdown from 'remove-markdown';
 import styled from 'styled-components';
+
 
 import { Box } from './Box';
 import { Icon } from './Icon';
 import { Text } from './Text';
+import { set } from 'lodash';
 
 const ChatPromptContainer = styled.div`
   position: fixed;
@@ -265,6 +268,7 @@ export const ChatPrompt: React.FC = () => {
     }
   }, [messages, isOpen]);
 
+  // Context for the AI query
   // Listen for the custom event to open chat and set input
   React.useEffect(() => {
     const handler = (e: CustomEvent<{ text: string }>) => {
@@ -336,6 +340,7 @@ export const ChatPrompt: React.FC = () => {
     setInputValue('');
     setIsLoading(true);
 
+
     void queryAlbert(valueToSend).then((responseText) => {
       const response: Message = {
         id: (Date.now() + 1).toString(),
@@ -371,8 +376,16 @@ export const ChatPrompt: React.FC = () => {
     }
   };
 
+  const onChange = async () => {
+    const markdown = await editor.blocksToMarkdownLossy(editor.document);
+    setMarkdown(markdown);
+    const str = removeMarkdown(markdown);
+    return 
+  };
+
   useEffect(() => {
     if (successMessageRef.current) {
+      onChange();
       const messageWidth = successMessageRef.current.offsetWidth;
       successMessageRef.current.style.setProperty(
         '--message-width',
@@ -502,8 +515,25 @@ export const ChatPrompt: React.FC = () => {
   );
 };
 
+// Helper to get current document context as plain text
+async function getDocumentContext(): Promise<string> {
+  console.log('[getDocumentContext] Called');
+  if (!(window as any).editor) {
+    console.warn('[getDocumentContext] window.editor is not defined');
+    return '';
+  }
+  const editor = (window as any).editor;
+  const markdown = await editor.blocksToMarkdownLossy(editor.document);
+  const plainText = removeMarkdown(markdown);
+  console.log('[getDocumentContext] Extracted plain text:', plainText);
+  return plainText;
+}
+
 export async function queryAlbert(prompt: string): Promise<string> {
   try {
+    // Get latest document context
+    const context = await getDocumentContext();
+
     const response = await fetch('http://localhost:8000', {
       method: 'POST',
       headers: {
@@ -511,6 +541,7 @@ export async function queryAlbert(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         prompt: prompt,
+        context: context || undefined,
       }),
     });
 

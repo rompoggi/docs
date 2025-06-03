@@ -128,6 +128,8 @@ export const BlockNoteEditor = ({ doc, provider }: BlockNoteEditorProps) => {
     [collabName, lang, provider, uploadFile],
   );
 
+  window.editor = editor; // Expose editor globally for debugging
+
   useHeadings(editor);
   useUploadStatus(editor);
 
