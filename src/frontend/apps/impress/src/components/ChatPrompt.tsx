@@ -1,23 +1,41 @@
-import React, { ChangeEvent, KeyboardEvent, useState } from 'react';
+import React, { ChangeEvent, KeyboardEvent, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { Box } from './Box';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
-const ChatPromptContainer = styled(Box)`
+const ChatPromptContainer = styled.div`
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   z-index: 1000;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
   justify-content: flex-end;
-  height: 100vh;
+  gap: 1rem;
 `;
 
 const OpenChatButton = styled.button`
+  background: var(--cunningham-theme-primary-500);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const OpenMoodleButton = styled.button`
   background: var(--cunningham-theme-primary-500);
   color: white;
   border: none;
@@ -40,8 +58,22 @@ const ChatWindow = styled(Box)`
   position: fixed;
   bottom: 6rem;
   right: 2rem;
-  width: 350px;
+  width: 380px;
   height: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const MoodleWindow = styled(Box)`
+  position: fixed;
+  bottom: 6rem;
+  right: 2rem;
+  width: 380px;
+  height: 300px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -62,6 +94,12 @@ const ChatHeader = styled(Box)`
 const ChatDivider = styled.hr`
   border: none;
   border-top: 2px solid #ccc;
+  margin: 0;
+`;
+
+const MoodleDivider = styled.hr`
+  border: none;
+  border-top: 2px solid orange;
   margin: 0;
 `;
 
@@ -124,6 +162,71 @@ const SendButton = styled.button`
   }
 `;
 
+const UpdateMoodleButton = styled.button`
+  background: var(--cunningham-theme-primary-500);
+  color: orange;
+  border: none;
+  border-radius: 20px;
+  width: calc(50% - 0.25rem);
+  height: 2.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.03);
+  }
+`;
+
+const RefreshMoodleButton = styled.button`
+  background: var(--cunningham-theme-primary-500);
+  color: red;
+  border: none;
+  border-radius: 20px;
+  width: calc(50% - 0.25rem);
+  height: 2.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.03);
+  }
+`;
+
+const ButtonRow = styled(Box)`
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
+
+const SuccessMessage = styled.div<{ visible: boolean }>`
+  position: absolute;
+  right: calc(4rem + 1.5rem - (var(--message-width) / 2));
+  bottom: 3.8rem;
+  color: green;
+  font-size: 0.95rem;
+  background: white;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  opacity: ${(props) => (props.visible ? 1 : 0)};
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  font-weight: bold;
+  min-width: 80px;
+  text-align: center;
+  box-sizing: border-box;
+  white-space: nowrap;
+`;
+
 interface Message {
   id: string;
   text: string;
@@ -140,6 +243,13 @@ export const ChatPrompt: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isMoodleOpen, setIsMoodleOpen] = useState(false);
+  const [moodleUsername, setMoodleUsername] = useState('');
+  const [moodleSession, setMoodleSession] = useState('');
+  const [moodlePassword, setPassword] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successMessageRef = React.useRef<HTMLDivElement>(null);
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) {
@@ -167,11 +277,118 @@ export const ChatPrompt: React.FC = () => {
     });
   };
 
+  const handleMoodleConnect = async (isUpdate: boolean) => {
+    if (!moodleUsername || !moodleSession || !moodlePassword) {
+      console.error('Moodle credentials are incomplete');
+      return;
+    }
+
+    try {
+      const result = await handleMoodle({
+        username: moodleUsername,
+        session: moodleSession,
+        password: moodlePassword,
+        isUpdate: isUpdate,
+      });
+      console.log('Moodle connection successful:', result);
+      setIsMoodleOpen(false);
+      setSuccessMessage(isUpdate ? 'Updated!' : 'Refreshed!');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 1000);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Moodle connection error:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (successMessageRef.current) {
+      const messageWidth = successMessageRef.current.offsetWidth;
+      successMessageRef.current.style.setProperty(
+        '--message-width',
+        `${messageWidth}px`,
+      );
+    }
+  }, [successMessage, showSuccess]);
+
   return (
     <ChatPromptContainer>
-      <OpenChatButton onClick={() => setIsOpen(!isOpen)}>
+      {successMessage && (
+        <SuccessMessage visible={showSuccess} ref={successMessageRef}>
+          {successMessage}
+        </SuccessMessage>
+      )}
+      <OpenMoodleButton
+        onClick={() => {
+          if (isMoodleOpen) {
+            setIsMoodleOpen(false);
+          } else {
+            setIsMoodleOpen(true);
+            setIsOpen(false);
+          }
+        }}
+      >
+        <Icon iconName={isMoodleOpen ? 'close' : 'moodle'} />
+      </OpenMoodleButton>
+
+      <OpenChatButton
+        onClick={() => {
+          if (isOpen) {
+            setIsOpen(false);
+          } else {
+            setIsOpen(true);
+            setIsMoodleOpen(false);
+          }
+        }}
+      >
         <Icon iconName={isOpen ? 'close' : 'chat'} />
       </OpenChatButton>
+
+      {isMoodleOpen && (
+        <MoodleWindow>
+          <ChatHeader>
+            <Text color="white" $weight="bold">
+              Moodle Session
+            </Text>
+          </ChatHeader>
+          <MoodleDivider />
+          <Box
+            style={{
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <Input
+              type="text"
+              placeholder="Username"
+              value={moodleUsername}
+              onChange={(e) => setMoodleUsername(e.target.value)}
+            />
+            <Input
+              type="text"
+              placeholder="Moodle Link (foo.moodle.bar)"
+              value={moodleSession}
+              onChange={(e) => setMoodleSession(e.target.value)}
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={moodlePassword}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <ButtonRow>
+              <RefreshMoodleButton onClick={() => handleMoodleConnect(false)}>
+                Refresh
+              </RefreshMoodleButton>
+              <UpdateMoodleButton onClick={() => handleMoodleConnect(true)}>
+                Update
+              </UpdateMoodleButton>
+            </ButtonRow>
+          </Box>
+        </MoodleWindow>
+      )}
 
       {isOpen && (
         <ChatWindow>
@@ -238,5 +455,46 @@ export async function queryAlbert(prompt: string): Promise<string> {
   } catch (error) {
     console.error('Network error:', error);
     return 'Network error: Unable to reach Albert API.';
+  }
+}
+
+export async function handleMoodle({
+  username,
+  session,
+  password,
+  isUpdate,
+}: {
+  username: string;
+  session: string;
+  password: string;
+  isUpdate: boolean;
+}): Promise<string> {
+  let action: string;
+  if (isUpdate) {
+    action = 'update';
+  } else {
+    action = 'reset';
+  }
+  console.log(username, session, password, action);
+  try {
+    const response = await fetch('http://localhost:8000/moodle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        session,
+        password,
+        action,
+      }),
+    });
+
+    const data = await response.json();
+    // You can adjust this depending on your backend's response structure
+    return data.response || 'No response from Moodle endpoint.';
+  } catch (error) {
+    console.error('Network error:', error);
+    return 'Network error: Unable to reach Moodle API.';
   }
 }
