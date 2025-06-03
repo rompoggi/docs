@@ -250,6 +250,20 @@ export const ChatPrompt: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const successMessageRef = React.useRef<HTMLDivElement>(null);
+  const chatMessagesRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  };
+
+  // Scroll to bottom when messages change or chat opens
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [messages, isOpen]);
 
   // Listen for the custom event to open chat and set input
   React.useEffect(() => {
@@ -454,7 +468,7 @@ export const ChatPrompt: React.FC = () => {
             </Text>
           </ChatHeader>
           <ChatDivider />
-          <ChatMessages>
+          <ChatMessages ref={chatMessagesRef}>
             {messages.map((message: Message) => (
               <MessageBubble key={message.id} sender={message.sender}>
                 <Text $color={message.sender === 'user' ? 'white' : 'black'}>
