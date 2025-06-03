@@ -251,14 +251,38 @@ export const ChatPrompt: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const successMessageRef = React.useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!inputValue.trim() || isLoading) {
+  // Listen for the custom event to open chat and set input
+  React.useEffect(() => {
+    const handler = (e: CustomEvent<{ text: string }>) => {
+      setIsOpen(true);
+      setInputValue(e.detail.text || '');
+      // Wait for inputValue to be set, then send the message
+      setTimeout(() => {
+        // Only send if text is not empty
+        if ((e.detail.text || '').trim()) {
+          handleSend(e.detail.text || '');
+        }
+      }, 0);
+    };
+    window.addEventListener('open-chat-with-input', handler as EventListener);
+    return () => {
+      window.removeEventListener(
+        'open-chat-with-input',
+        handler as EventListener,
+      );
+    };
+  }, []);
+
+  // Accept an optional override value for sending (for programmatic send)
+  const handleSend = (overrideValue?: string) => {
+    const valueToSend = overrideValue !== undefined ? overrideValue : inputValue;
+    if (!valueToSend.trim() || isLoading) {
       return;
     }
 
     const newMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: valueToSend,
       sender: 'user',
     };
 
@@ -266,7 +290,7 @@ export const ChatPrompt: React.FC = () => {
     setInputValue('');
     setIsLoading(true);
 
-    void queryAlbert(inputValue).then((responseText) => {
+    void queryAlbert(valueToSend).then((responseText) => {
       const response: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,

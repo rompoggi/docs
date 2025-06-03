@@ -5,7 +5,7 @@ import {
   getFormattingToolbarItems,
   useDictionary,
 } from '@blocknote/react';
-import React, { JSX, useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useConfig } from '@/core/config/api';
@@ -14,6 +14,7 @@ import { getCalloutFormattingToolbarItems } from '../custom-blocks';
 
 import { AIGroupButton } from './AIButton';
 import { FileDownloadButton } from './FileDownloadButton';
+import { FindButton } from './FindButton';
 import { MarkdownButton } from './MarkdownButton';
 import { ModalConfirmDownloadUnsafe } from './ModalConfirmDownloadUnsafe';
 
@@ -24,7 +25,7 @@ export const BlockNoteToolbar = () => {
   const { t } = useTranslation();
   const { data: conf } = useConfig();
 
-  const toolbarItems = useMemo(() => {
+  const toolbarItems = useMemo<React.ReactNode[]>(() => {
     const toolbarItems = getFormattingToolbarItems([
       ...blockTypeSelectItems(dict),
       getCalloutFormattingToolbarItems(t),
@@ -50,26 +51,25 @@ export const BlockNoteToolbar = () => {
       );
     }
 
-    return toolbarItems as JSX.Element[];
+    return toolbarItems as React.ReactNode[];
   }, [dict, t]);
-
-  const formattingToolbar = useCallback(() => {
-    return (
-      <FormattingToolbar>
-        {toolbarItems}
-
-        {/* Extra button to do some AI powered actions */}
-        {conf?.AI_FEATURE_ENABLED && <AIGroupButton key="AIButton" />}
-
-        {/* Extra button to convert from markdown to json */}
-        <MarkdownButton key="customButton" />
-      </FormattingToolbar>
-    );
-  }, [toolbarItems, conf?.AI_FEATURE_ENABLED]);
 
   return (
     <>
-      <FormattingToolbarController formattingToolbar={formattingToolbar} />
+      <FormattingToolbarController
+        formattingToolbar={(controller) => (
+          <FormattingToolbar>
+            {toolbarItems}
+            <FindButton key="findButton" controller={controller} />
+
+            {/* Extra button to do some AI powered actions */}
+            {conf?.AI_FEATURE_ENABLED && <AIGroupButton key="AIButton" />}
+
+            {/* Extra button to convert from markdown to json */}
+            <MarkdownButton key="customButton" />
+          </FormattingToolbar>
+        )}
+      />
       {confirmOpen && (
         <ModalConfirmDownloadUnsafe
           onClose={() => setIsConfirmOpen(false)}
