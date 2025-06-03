@@ -517,22 +517,19 @@ export const ChatPrompt: React.FC = () => {
 
 // Helper to get current document context as plain text
 async function getDocumentContext(): Promise<string> {
-  console.log('[getDocumentContext] Called');
   if (!(window as any).editor) {
-    console.warn('[getDocumentContext] window.editor is not defined');
     return '';
   }
   const editor = (window as any).editor;
   const markdown = await editor.blocksToMarkdownLossy(editor.document);
   const plainText = removeMarkdown(markdown);
-  console.log('[getDocumentContext] Extracted plain text:', plainText);
   return plainText;
 }
 
 export async function queryAlbert(prompt: string): Promise<string> {
   try {
-    // Get latest document context
-    const context = await getDocumentContext();
+    // Get latest document current_page
+    const current_page = await getDocumentContext();
 
     const response = await fetch('http://localhost:8000', {
       method: 'POST',
@@ -541,7 +538,7 @@ export async function queryAlbert(prompt: string): Promise<string> {
       },
       body: JSON.stringify({
         prompt: prompt,
-        context: context || undefined,
+        current_page: context || undefined,
       }),
     });
 
